@@ -1,14 +1,13 @@
 import * as express from "express";
 import * as bodyParser from "body-parser";
-import { Routes } from "./routes/crmRoutes";
+import { Routes } from "./routes";
 import * as mongoose from "mongoose";
-
 class App {
 
     public app: express.Application = express();
     public routePrv: Routes = new Routes();
     // public mongoUrl: string = 'mongodb://localhost/CRMdb';  
-    public mongoUrl: string = 'mongodb://dalenguyen:123123@localhost:27017/CRMdb';
+    public mongoUrl: string = 'mongodb://admin:admin123@ds235947.mlab.com:35947/sandbox-allinvestx';
 
     constructor() {
         this.config();
@@ -24,7 +23,7 @@ class App {
     }
 
     private mongoSetup(): void{
-        mongoose.Promise = global.Promise;
+        (<any>mongoose).Promise = global.Promise;
         mongoose.connect(this.mongoUrl, {useNewUrlParser: true});        
     }
 
