@@ -1,19 +1,11 @@
 import { subYears } from 'date-fns';
 import { ObjectId } from 'mongodb';
-import {
-  arrayProp as ArrayProperty,
-  ModelType,
-  pre as Pre,
-  prop as Property,
-  staticMethod as StaticMethod,
-  Typegoose
-} from 'typegoose';
-import { cnpjValidator, countryCodeValidator, cpfValidator, emailValidator } from '../../helpers/mongooseValidators';
+import { arrayProp as ArrayProperty, ModelType, prop as Property, Typegoose } from 'typegoose';
+import { cnpjValidator, countryCodeValidator, cpfValidator, emailValidator } from '../helpers/mongooseValidators';
 
-type NewCustomerStatus = 'pending' | 'preApproved' | 'approved' | 'refused';
 type MaritalStatus = 'single' | 'married' | 'divorced' | 'widower' | 'legally-separated';
-type NewCustomerType = 'person' | 'company';
-type NewCustomerGender = 'male' | 'female' | 'other';
+type CustomerType = 'person' | 'company';
+type CustomerGender = 'male' | 'female' | 'other';
 
 export const MaritalStatusEnum = {
   DIVORCED: 'divorced',
@@ -23,19 +15,12 @@ export const MaritalStatusEnum = {
   WIDOWER: 'widower'
 };
 
-export const NewCustomerStatusEnum = {
-  APPROVED: 'approved',
-  PENDING: 'pending',
-  PREAPPROVED: 'preApproved',
-  REFUSED: 'refused'
-};
-
-export const NewCustomerTypeEnum = {
+export const CustomerTypeEnum = {
   COMPANY: 'company',
   PERSON: 'person'
 };
 
-export const NewCustomerGenderEnum = {
+export const CustomerGenderEnum = {
   FEMALE: 'female',
   MALE: 'male',
   OTHER: 'other'
@@ -55,15 +40,14 @@ export class PhoneNumber {
 async function duplicateEmailValidator(this: any, value: string) {
   const document = this.parent().parent();
   let query: any = {
-    'contactInfo.emails.address': value,
-    'status': { $ne: NewCustomerStatusEnum.REFUSED }
+    'contactInfo.emails.address': value
   };
 
   if (!document.isNew) {
     query = { ...query, _id: { $ne: document._id } };
   }
 
-  return (await NewCustomerModel.count(query)) === 0;
+  return (await CustomerModel.count(query)) === 0;
 }
 
 export class Email {
@@ -130,7 +114,7 @@ export class PersonalInfo {
   })
   public birthDate: Date;
 
-  @Property({ required: true, validate: cpfValidator })
+  @Property({ required: true, validate: cpfValidator, unique: true, sparse: true })
   public cpf: string;
 
   /**
@@ -139,8 +123,8 @@ export class PersonalInfo {
   @Property({ required: true, validate: countryCodeValidator })
   public nationality: string;
 
-  @Property({ required: true, enum: NewCustomerGenderEnum })
-  public gender: NewCustomerGender;
+  @Property({ required: true, enum: CustomerGenderEnum })
+  public gender: CustomerGender;
 
   @Property()
   public fatherName?: string;
@@ -186,7 +170,7 @@ export class CompanyInfo {
   @Property({ required: true })
   public creationDate: Date;
 
-  @Property({ required: true, validate: cnpjValidator })
+  @Property({ required: true, validate: cnpjValidator, unique: true, sparse: true })
   public cnpj: string;
 
   @Property({ required: true })
@@ -242,46 +226,12 @@ export class ContactInfo {
   public emails: Email[];
 }
 
-@Pre<NewCustomer>('validate', function preValidate() {
-  // aqui definimos valores padrões para as propriedades
-  // para evitar que um valor seja forçado na requisição
-  if (this.isNew) {
-    this.contactInfo.emails = this.contactInfo.emails.map((e: Email) => {
-      e.isVerified = false;
-
-      return e;
-    });
-
-    this.contactInfo.phoneNumbers = this.contactInfo.phoneNumbers.map((p: PhoneNumber) => {
-      p.isVerified = false;
-
-      return p;
-    });
-
-    this.status = NewCustomerStatusEnum.PENDING as NewCustomerStatus;
-
-    if (this.type !== NewCustomerTypeEnum.PERSON) {
-      this.personalInfo = undefined;
-    } else {
-      this.companyInfo = undefined;
-    }
-  }
-})
-export class NewCustomer extends Typegoose {
-  @StaticMethod
-  public static async isAlreadySignedUp(this: ModelType<NewCustomer> & typeof NewCustomer, newCustomer: NewCustomer) {
-    const baseQuery = { status: { $ne: NewCustomerStatusEnum.REFUSED } };
-
-    if (newCustomer.type === 'company') {
-      return await
-        this.count({ ...baseQuery, 'companyInfo.cnpj': newCustomer.companyInfo.cnpj }) > 0;
-    }
-
-    return await this.count({ ...baseQuery, 'personalInfo.cpf': newCustomer.personalInfo.cpf }) > 0;
-  }
-
+export class Customer extends Typegoose {
   // tslint:disable-next-line: variable-name
   public _id: string | ObjectId;
+
+  @Property({ required: true })
+  public onboarding: string | ObjectId;
 
   @Property({ required: true })
   public address: Address;
@@ -289,27 +239,24 @@ export class NewCustomer extends Typegoose {
   @Property({ required: true })
   public contactInfo: ContactInfo;
 
-  /**
-   * Status do cadastro
-   */
-  @Property({ enum: NewCustomerStatusEnum, required: true, default: NewCustomerStatusEnum.PENDING })
-  public status: NewCustomerStatus;
-
-  /**
-   * Motivo de recusa do cadastro (se houver)
-   */
-  @Property()
-  public refusalReason?: string;
-
   @Property({ required() { return this.type === 'person'; } })
   public personalInfo?: PersonalInfo;
 
   @Property({ required() { return this.type === 'company'; } })
   public companyInfo?: CompanyInfo;
 
-  @Property({ enum: NewCustomerTypeEnum, required: true })
-  public type: NewCustomerType;
+  @Property({ enum: CustomerTypeEnum, required: true })
+  public type: CustomerType;
+
+  @Property()
+  get displayName() {
+    if (this.type === 'company') {
+      return this.companyInfo.tradingName;
+    }
+
+    return this.personalInfo.name;
+  }
 }
 
-export const NewCustomerModel =
-  new NewCustomer().getModelForClass(NewCustomer, { schemaOptions: { collection: 'newCustomers', timestamps: true } });
+export const CustomerModel =
+  new Customer().getModelForClass(Customer, { schemaOptions: { collection: 'customers', timestamps: true } });

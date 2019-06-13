@@ -1,4 +1,4 @@
-import { BlacklistModel, Blacklist } from '../models/Blacklist';
+import { BlacklistModel, Blacklist } from '../../models/Blacklist';
 import { Request, Response } from 'express';
 
 export class BlacklistController{
