@@ -1,29 +1,33 @@
 {
-  "name": "crm",
+  "name": "allinvestx-sandbox",
   "version": "1.0.0",
-  "description": "An API built with NodeJS, Express, MongoDB and TypeScript",
+  "description": "A Sandbox API built with NodeJS, Express, MongoDB and TypeScript",
   "main": "dist/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "dev": "ts-node ./lib/server.ts",
+    "dev": "ts-node ./server.ts",
     "start": "nodemon ./dist/server.js",
     "prod": "npm run build && npm run start"
   },
   "keywords": [
-    "Dale",
-    "Nguyen"
+    "All",
+    "InvestX"
   ],
-  "author": "Dale Nguyen <dungnq@itbox4vn.com> (http://dalenguyen.me)",
+  "author": "João Netto",
   "license": "ISC",
   "dependencies": {
+    "@sendgrid/mail": "^6.4.0",
     "@types/bluebird": "^3.5.27",
     "@types/express": "^4.16.1",
     "@types/mongodb": "^3.1.28",
     "@types/mongoose": "^5.5.6",
+    "azure-storage": "^2.10.3",
     "body-parser": "^1.18.3",
     "date-fns": "^1.30.1",
+    "dotenv": "^8.0.0",
     "express": "^4.16.4",
+    "handlebars": "^4.1.2",
     "http-status": "^1.3.2",
     "i18n-iso-countries": "^4.1.0",
     "mongodb": "^3.2.7",

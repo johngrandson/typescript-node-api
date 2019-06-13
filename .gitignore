@@ -4,4 +4,5 @@ dist
 # sphinx folders
 _build
 _static
-_templates
+_templatessendgrid.env
+.env
