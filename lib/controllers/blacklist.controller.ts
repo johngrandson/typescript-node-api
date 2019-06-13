@@ -3,16 +3,24 @@ import { Request, Response } from 'express';
 
 export class BlacklistController{
 
-    public addToBlacklist (req: Request, res: Response) {                
+    public async addToBlacklist (req: Request, res: Response) {                
         let customer = new BlacklistModel(req.body);
 
-        customer.save(async (err, customer) => {
-            if(err){
-                res.send(err);
-            }
+        const blacklistRegistry = await BlacklistModel.findOne({ cpf: req.body.cpf });
 
-            res.json(customer);
-        });
+        if (blacklistRegistry) {
+            res.json({ message: 'CPF já cadastrado na blacklist!' });
+            return;
+        } else {
+            customer.save(async (err, customer) => {
+                if(err){
+                    res.send(err);
+                }
+    
+                res.json(customer);
+            });
+        }
+
     }
 
     public getBlacklist (req: Request, res: Response) {           
